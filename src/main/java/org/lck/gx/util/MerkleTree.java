@@ -2,7 +2,8 @@ package org.lck.gx.util;
 
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.util.encoders.Hex;
-
+import org.web3j.crypto.Hash;
+import org.web3j.utils.Numeric;
 import java.math.BigInteger;
 import java.util.*;
 
@@ -16,6 +17,8 @@ public class MerkleTree {
     private List<byte[]> leaves = new ArrayList<>();
     // address(lowercase) -> index（与 leaves 对应）
     private final Map<String, Integer> addressIndexMap = new HashMap<>();
+
+
     // 根（0x 前缀）
     private String root = "0x";
 
@@ -189,4 +192,32 @@ public class MerkleTree {
         // 这里直接返回原始或转小写都可以，因为我们解码为字节；关键是 Hex.decode 不区分大小写
         return address.startsWith("0x") ? address : "0x" + address;
     }
+
+    public static String makeLeafHex(String address, BigInteger amount) {
+        // 地址去掉 0x 前缀并补齐 40 位
+        String cleanAddress = Numeric.cleanHexPrefix(address).toLowerCase();
+        while (cleanAddress.length() < 40) {
+            cleanAddress = "0" + cleanAddress;
+        }
+
+        // 金额转 hex，左补零到 64 位
+        String amountHex = amount.toString(16);
+        while (amountHex.length() < 64) {
+            amountHex = "0" + amountHex;
+        }
+
+        // 拼接并哈希
+        String leafInput = "0x" + cleanAddress + amountHex;
+        return Hash.sha3(leafInput);
+    }
+
+    /**
+     * 根据地址获取叶子在 Merkle Tree 中的索引
+     */
+    public  Integer getIndex(String address) {
+        return addressIndexMap.get(address.toLowerCase());
+    }
+
+
+
 }

@@ -1,5 +1,10 @@
 package org.lck.gx.controller;
 
+import org.lck.gx.dto.ProofResponse;
+import org.lck.gx.entity.AirdropAddress;
+import org.lck.gx.entity.AirdropBatch;
+import org.lck.gx.service.AirdropAddressService;
+import org.lck.gx.service.AirdropService;
 import org.lck.gx.util.MerkleTree;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -7,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/airdrop")
@@ -14,10 +20,16 @@ public class AirdropController {
 
     private final MerkleTree merkleTree = new MerkleTree();
 
+    @Autowired
+    private AirdropService airdropService;
+
+    @Autowired
+    private AirdropAddressService airdropAddressService;
+
 
     @GetMapping("/init")
     public ResponseEntity<String> init() {
-        Map<String, BigInteger > addressAmountMap = new HashMap<>();
+        Map<String, BigInteger> addressAmountMap = new HashMap<>();
         addressAmountMap.put("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", new BigInteger("1000000000000000000"));
         addressAmountMap.put("0x70997970C51812dc3A010C7d01b50e0d17dc79C8", new BigInteger("1000000000000000000"));
         addressAmountMap.put("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", new BigInteger("1000000000000000000"));
@@ -34,7 +46,7 @@ public class AirdropController {
     }
 
     // 获取某个地址的 Proof
-    @GetMapping("/proof")
+/*    @GetMapping("/proof")
     public ResponseEntity<Map<String, Object>> getProof(@RequestParam String address) {
         List<String> proof = merkleTree.getProofByAddress(address);
         boolean eligible = !proof.isEmpty();
@@ -45,7 +57,7 @@ public class AirdropController {
         result.put("proof", proof);
 
         return ResponseEntity.ok(result);
-    }
+    }*/
 
     // 检查某个地址是否在白名单
     @GetMapping("/check")
@@ -57,5 +69,30 @@ public class AirdropController {
         result.put("eligible", eligible);
 
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 创建批次并持久化（入参：地址->金额）
+     */
+    @GetMapping("/init/tree")
+    public ResponseEntity<AirdropBatch> createBatch() {
+        List<AirdropAddress> allAddressInfo = airdropAddressService.getAllAddressInfo();
+        Map<String, BigInteger> addrAmountMap = allAddressInfo.stream().collect(Collectors.toMap(AirdropAddress::getAddress, AirdropAddress::getAmount));
+        AirdropBatch batch = airdropService.createBatch(
+                "initTree",
+                addrAmountMap
+        );
+        return ResponseEntity.ok(batch);
+    }
+
+    /**
+     * 查询指定批次 + 地址的 proof、amount、root
+     */
+    @GetMapping("/proof")
+    public ResponseEntity<ProofResponse> getProof(
+            @RequestParam Long batchId,
+            @RequestParam String address
+    ) {
+        return ResponseEntity.ok(airdropService.getProof(batchId, address));
     }
 }
