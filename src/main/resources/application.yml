@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:mysql://104.223.57.85:3306/lck?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: gx
+    password: ab5282978
+  jpa:
+    hibernate:
+      ddl-auto: update   # 生产建议改为 validate / none 并用脚本建表
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+server:
+  port: 8080
+eth:
+  rpcUrl: http://127.0.0.1:8545   # 你的本地或远程节点
+contract:
+  lotteryPool: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e" # LotteryPool 地址
